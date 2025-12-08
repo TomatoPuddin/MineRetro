@@ -1,82 +1,86 @@
-#ifndef MINERETRO_MINERETRO_H
-#define MINERETRO_MINERETRO_H
+#pragma once
+
+#include <cstdint>
+#include "platform.h"
+
+extern "C" {
+#include "libretro.h"
+}
 
 namespace mineretro {
     struct LibretroReference {
-        HMODULE hmodule;
+        std::unique_ptr<Library> lib;
         bool initialized;
         bool supports_no_game;
         bool is_game_loaded;
         retro_perf_counter *perf_counter_last;
 
-        void (*retro_init)();
+        decltype(&retro_init) retro_init;
 
-        void (*retro_deinit)();
+        decltype(&retro_deinit) retro_deinit;
 
-        unsigned (*retro_api_version)();
+        decltype(&retro_api_version) retro_api_version;
 
-        void (*retro_get_system_info)(retro_system_info *info);
+        decltype(&retro_get_system_info) retro_get_system_info;
 
-        void (*retro_get_system_av_info)(retro_system_av_info *info);
+        decltype(&retro_get_system_av_info) retro_get_system_av_info;
 
-        void (*retro_set_controller_port_device)(unsigned port, unsigned device);
+        decltype(&retro_set_controller_port_device) retro_set_controller_port_device;
 
-        void (*retro_reset)();
+        decltype(&retro_reset) retro_reset;
 
-        void (*retro_run)();
+        decltype(&retro_run) retro_run;
 
-        bool (*retro_load_game)(const retro_game_info *game);
+        decltype(&retro_load_game) retro_load_game;
 
-        void (*retro_unload_game)();
+        decltype(&retro_unload_game) retro_unload_game;
     };
 
     extern "C" {
-    void MineretroLoadCore(const char *core_file);
+    MR_API void MineretroLoadCore(const char *core_file);
 
-    void MineretroUnloadCore();
+    MR_API void MineretroUnloadCore();
 
-    bool MineretroLoadGame(const char *game_file);
+    MR_API bool MineretroLoadGame(const char *game_file);
 
-    void MineretroUnloadGame();
+    MR_API void MineretroUnloadGame();
 
-    void MineretroLoop();
+    MR_API void MineretroLoop();
 
-    void mineretro_set_video(retro_video_refresh_t video);
+    MR_API void MineretroSetVideo(retro_video_refresh_t video);
 
-    void mineretro_set_audio(retro_audio_sample_t audio);
+    MR_API void MineretroSetAudio(retro_audio_sample_t audio);
 
-    void mineretro_set_audio_batch(retro_audio_sample_batch_t audio);
+    MR_API void MineretroSetAudioBatch(retro_audio_sample_batch_t audio);
 
-    void mineretro_set_input_poll(retro_input_poll_t input_poll);
+    MR_API void MineretroSetInputPoll(retro_input_poll_t input_poll);
 
-    void mineretro_set_input_state(retro_input_state_t input_state);
+    MR_API void MineretroSetInputState(retro_input_state_t input_state);
 
-    void mineretro_set_system_and_save_dir(char *system, char *save);
+    MR_API void MineretroSetSystemAndSaveDir(char *system, char *save);
 
-    retro_system_info mineretro_get_system_info();
+    MR_API retro_system_info MineretroGetSystemInfo();
 
-    retro_system_av_info mineretro_get_system_av_info();
+    MR_API retro_system_av_info MineretroGetSystemAvInfo();
 
-    retro_game_geometry mineretro_get_geometry_info();
+    MR_API retro_game_geometry MineretroGetGeometryInfo();
 
-    retro_pixel_format mineretro_get_pixel_format();
+    MR_API retro_pixel_format MineretroGetPixelFormat();
 
-    unsigned mineretro_get_rotation();
+    MR_API unsigned MineretroGetRotation();
     }
 
-    bool CoreEnvironment(unsigned cmd, const void *data);
+    bool RETRO_CALLCONV CoreEnvironment(unsigned cmd, void *data) noexcept;
 
-    void CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch);
+    void RETRO_CALLCONV CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch) noexcept;
 
-    void CoreInputPoll();
+    void RETRO_CALLCONV CoreInputPoll() noexcept;
 
-    int16_t CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id);
+    int16_t RETRO_CALLCONV CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id) noexcept;
 
-    size_t CoreAudioSampleBatch(const int16_t *data, size_t frames);
+    size_t RETRO_CALLCONV CoreAudioSampleBatch(const int16_t *data, size_t frames) noexcept;
 
-    void CoreAudioSample(int16_t left, int16_t right);
+    void RETRO_CALLCONV CoreAudioSample(int16_t left, int16_t right) noexcept;
 
-    void CoreLog(retro_log_level level, const char *fmt, ...);
+    void RETRO_CALLCONV CoreLog(retro_log_level level, const char *fmt, ...) noexcept;
 }
-
-#endif // MINERETRO_MINERETRO_H

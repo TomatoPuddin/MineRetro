@@ -1,79 +1,86 @@
-#include <windows.h>
-#include "libretro.h"
 #include "mineretro.h"
 
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <ctime>
+#include <cstdio>
+#include <cstdarg>
+#include <format>
+#include <iostream>
+#include <array>
+
+#include <unordered_map>
+
+#include "platform.h"
+#include "util/string_hasher.h"
 
 namespace mineretro {
-    const char *kLogLevel[] = {"Debug", "Info", "Warning", "Error"};
+    static constexpr std::array<std::string_view, 4> kLogLevel{"Debug", "Info", "Warning", "Error"};
+    static constexpr retro_log_level kMinLogLevel = RETRO_LOG_INFO;
 
-    LibretroReference libretro_reference = {};
+    static LibretroReference libretro_reference{};
 
-    retro_variable *g_vars = nullptr;
-    retro_system_info system_info = {};
-    retro_audio_callback audio_callback = {};
-    retro_system_av_info av_info = {};
-    retro_game_geometry geometry_info = {};
-    retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
+    struct GameOption {
+        const std::string desc;
+        std::string value;
+    };
 
-    unsigned rotation = 0;
-    char *system_dir = nullptr;
-    char *save_dir = nullptr;
+    static std::unordered_map<std::string, GameOption, GenericStringHasher, std::equal_to<>> g_vars;
+    static retro_system_info system_info{};
+    static retro_audio_callback audio_callback{};
+    static retro_system_av_info av_info{};
+    static retro_game_geometry geometry_info{};
+    static retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_0RGB1555;
 
-    retro_video_refresh_t mineretro_video = nullptr;
-    retro_audio_sample_t mineretro_audio = nullptr;
-    retro_audio_sample_batch_t mineretro_audio_batch = nullptr;
-    retro_input_poll_t mineretro_input_poll = nullptr;
-    retro_input_state_t mineretro_input_state = nullptr;
+    static unsigned rotation = 0;
+    static std::string system_dir;
+    static std::string save_dir;
+
+    static retro_video_refresh_t mineretro_video = nullptr;
+    static retro_audio_sample_t mineretro_audio = nullptr;
+    static retro_audio_sample_batch_t mineretro_audio_batch = nullptr;
+    static retro_input_poll_t mineretro_input_poll = nullptr;
+    static retro_input_state_t mineretro_input_state = nullptr;
 
     void MineretroLoadCore(const char *core_file) {
-        // 初始化回调函数
-        void (*set_environment)(retro_environment_t) = nullptr;
-        void (*set_video_refresh)(retro_video_refresh_t) = nullptr;
-        void (*set_input_poll)(retro_input_poll_t) = nullptr;
-        void (*set_input_state)(retro_input_state_t) = nullptr;
-        void (*set_audio_sample)(retro_audio_sample_t) = nullptr;
-        void (*set_audio_sample_batch)(retro_audio_sample_batch_t) = nullptr;
+        auto res = Platform::get().LoadLib(core_file);
+        if (!res) {
+            CoreLog(RETRO_LOG_ERROR, "Failed to load core lib");
+            return;
+        }
+        auto& lib = **res;
 
-        memset(&libretro_reference, 0, sizeof(libretro_reference));
-        libretro_reference.hmodule = LoadLibrary(TEXT(core_file));
+        decltype(&retro_set_environment) set_environment;
+        decltype(&retro_set_video_refresh) set_video_refresh;
+        decltype(&retro_set_input_poll) set_input_poll;
+        decltype(&retro_set_input_state) set_input_state;
+        decltype(&retro_set_audio_sample) set_audio_sample;
+        decltype(&retro_set_audio_sample_batch) set_audio_sample_batch;
 
-        libretro_reference.retro_init = reinterpret_cast<void(*)()>(GetProcAddress(
-            libretro_reference.hmodule, "retro_init"));
-        libretro_reference.retro_deinit = reinterpret_cast<void(*)()>(GetProcAddress(
-            libretro_reference.hmodule, "retro_deinit"));
-        libretro_reference.retro_api_version = reinterpret_cast<unsigned(*)()>(
-            GetProcAddress(libretro_reference.hmodule, "retro_api_version"));
-        libretro_reference.retro_get_system_info = reinterpret_cast<void(*)(retro_system_info *info)>(GetProcAddress(
-            libretro_reference.hmodule, "retro_get_system_info"));
-        libretro_reference.retro_get_system_av_info = reinterpret_cast<void(*)(retro_system_av_info *info)>(
-            GetProcAddress(
-                libretro_reference.hmodule, "retro_get_system_av_info"));
-        libretro_reference.retro_set_controller_port_device = reinterpret_cast<void(*)(unsigned port, unsigned device)>(
-            GetProcAddress(
-                libretro_reference.hmodule, "retro_set_controller_port_device"));
-        libretro_reference.retro_run = reinterpret_cast<void(*)()>(GetProcAddress(
-            libretro_reference.hmodule, "retro_run"));
-        libretro_reference.retro_load_game = reinterpret_cast<bool(*)(const retro_game_info *game)>(GetProcAddress(
-            libretro_reference.hmodule, "retro_load_game"));
-        libretro_reference.retro_unload_game = reinterpret_cast<void(*)()>(GetProcAddress(
-            libretro_reference.hmodule, "retro_unload_game"));
+        auto result = [&]() -> Result<void> {
+            MR_CHECK(lib.FindSymbol("retro_init", libretro_reference.retro_init), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_deinit", libretro_reference.retro_deinit), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_api_version", libretro_reference.retro_api_version), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_get_system_info", libretro_reference.retro_get_system_info), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_get_system_av_info", libretro_reference.retro_get_system_av_info), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_set_controller_port_device", libretro_reference.retro_set_controller_port_device), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_run", libretro_reference.retro_run), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_load_game", libretro_reference.retro_load_game), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_unload_game", libretro_reference.retro_unload_game), LoadRetroCoreLib);
 
-        set_environment = reinterpret_cast<void(*)(retro_environment_t)>(
-            GetProcAddress(libretro_reference.hmodule, "retro_set_environment"));
-        set_video_refresh = reinterpret_cast<void(*)(retro_video_refresh_t)>(
-            GetProcAddress(libretro_reference.hmodule, "retro_set_video_refresh"));
-        set_input_poll = reinterpret_cast<void(*)(retro_input_poll_t)>(
-            GetProcAddress(libretro_reference.hmodule, "retro_set_input_poll"));
-        set_input_state = reinterpret_cast<void(*)(retro_input_state_t)>(
-            GetProcAddress(libretro_reference.hmodule, "retro_set_input_state"));
-        set_audio_sample = reinterpret_cast<void(*)(retro_audio_sample_t)>(
-            GetProcAddress(libretro_reference.hmodule, "retro_set_audio_sample"));
-        set_audio_sample_batch = reinterpret_cast<void(*)(retro_audio_sample_batch_t)>(
-            GetProcAddress(libretro_reference.hmodule, "retro_set_audio_sample_batch"));
+            MR_CHECK(lib.FindSymbol("retro_set_environment", set_environment), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_set_video_refresh", set_video_refresh), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_set_input_poll", set_input_poll), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_set_input_state", set_input_state), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_set_audio_sample", set_audio_sample), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_set_audio_sample_batch", set_audio_sample_batch), LoadRetroCoreLib);
 
+            return kSuccess;
+        }();
+        if (!result) {
+            CoreLog(RETRO_LOG_ERROR, "Invalid core lib");
+            return;
+        }
+
+        libretro_reference.lib = std::move(*res);
         CoreLog(RETRO_LOG_INFO, "API Version: %d", libretro_reference.retro_api_version());
 
         set_environment(reinterpret_cast<retro_environment_t>(CoreEnvironment));
@@ -94,18 +101,10 @@ namespace mineretro {
         if (libretro_reference.initialized) {
             MineretroUnloadGame();
             libretro_reference.retro_deinit();
-            FreeLibrary(libretro_reference.hmodule);
             libretro_reference.initialized = false;
+            libretro_reference.lib.reset();
         }
-
-        if (g_vars) {
-            for (const retro_variable *v = g_vars; v->key; ++v) {
-                free(const_cast<char *>(v->key));
-                free(const_cast<char *>(v->value));
-            }
-            free(g_vars);
-            g_vars = nullptr;
-        }
+        g_vars.clear();
     }
 
     bool MineretroLoadGame(const char *game_file) {
@@ -174,7 +173,7 @@ namespace mineretro {
         libretro_reference.retro_run();
     }
 
-    bool CoreEnvironment(const unsigned cmd, const void *data) {
+    bool CoreEnvironment(const unsigned cmd, void* data) noexcept {
         // 这个选项每帧会执行一次，故放在最前面
         if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE) {
             *(bool *) data = false;
@@ -192,49 +191,32 @@ namespace mineretro {
                 // 后面那部分，分号之前的都是注释
                 // 后面的是可用的值，用 | 分割
                 const auto *vars = static_cast<const struct retro_variable *>(data);
-                size_t num_vars = 0;
                 for (const retro_variable *v = vars; v->key; ++v) {
-                    num_vars++;
-                }
-                g_vars = static_cast<retro_variable *>(calloc(num_vars + 1, sizeof(*g_vars)));
+                    std::string_view desc(v->value);
+                    auto result = g_vars.emplace(v->key, GameOption{std::string(desc), ""});
 
-                // 这里的目的就是把后面的数值进行分析，取第一个数值，存入
-                // 比如上文的 foo_option，就取 false
-                for (unsigned i = 0; i < num_vars; ++i) {
-                    const retro_variable *in_var = &vars[i];
-                    retro_variable *out_var = &g_vars[i];
-
-                    const char *semicolon = strchr(in_var->value, ';');
-                    const char *first_pipe = strchr(in_var->value, '|');
+                    auto semicolon = desc.find(';');
+                    auto first_pipe = desc.find('|');
 
                     semicolon++;
-                    while (isspace(*semicolon)) {
+                    while (isspace(desc[semicolon])) {
                         semicolon++;
                     }
-                    if (first_pipe) {
-                        out_var->value = static_cast<char *>(malloc(first_pipe - semicolon + 1));
-                        memcpy(const_cast<char *>(out_var->value), semicolon, first_pipe - semicolon);
-                        const_cast<char *>(out_var->value)[first_pipe - semicolon] = '\0';
+                    if (first_pipe != std::string::npos) {
+                        result.first->second.value = desc.substr(semicolon, first_pipe - semicolon);
                     } else {
-                        out_var->value = strdup(semicolon);
+                        result.first->second.value = desc.substr(semicolon);
                     }
-                    out_var->key = strdup(in_var->key);
                 }
                 return true;
             }
 
             case RETRO_ENVIRONMENT_GET_VARIABLE: {
-                auto *var = (struct retro_variable *) data;
-                if (!g_vars) {
-                    return false;
-                }
                 // 把我们 RETRO_ENVIRONMENT_SET_VARIABLES 这一步得到的数据
-                // 对比 key 是一样的情况下，复制 value 过去
-                for (const retro_variable *v = g_vars; v->key; ++v) {
-                    if (strcmp(var->key, v->key) == 0) {
-                        var->value = v->value;
-                        break;
-                    }
+                auto var = static_cast<retro_variable *>(data);
+                auto result = g_vars.find(std::string_view(var->key));
+                if (result != g_vars.end()) {
+                    var->value = result->second.value.c_str();
                 }
                 return true;
             }
@@ -260,7 +242,7 @@ namespace mineretro {
             }
 
             case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: {
-                const auto fmt = static_cast<const enum retro_pixel_format *>(data);
+                const auto fmt = static_cast<const retro_pixel_format *>(data);
                 if (*fmt > RETRO_PIXEL_FORMAT_RGB565) {
                     return false;
                 }
@@ -283,11 +265,11 @@ namespace mineretro {
             }
 
             case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: {
-                *(const char **) data = save_dir;
+                *static_cast<const char **>(data) = save_dir.c_str();
                 return true;
             }
             case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: {
-                *(const char **) data = system_dir;
+                *static_cast<const char **>(data) = system_dir.c_str();
                 return true;
             }
 
@@ -311,81 +293,84 @@ namespace mineretro {
                 return true;
             }
 
-            default: return false;
+            default: {
+                CoreLog(RETRO_LOG_ERROR, "Unsupported env cmd: %d", cmd);
+                return false;
+            }
         }
     }
 
-    void CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch) {
+    void CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch) noexcept {
         if (data == nullptr) {
             return;
         }
         mineretro_video(data, width, height, pitch);
     }
 
-    void CoreInputPoll() {
+    void CoreInputPoll() noexcept {
         mineretro_input_poll();
     }
 
-    int16_t CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id) {
+    int16_t CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id) noexcept {
         return mineretro_input_state(port, device, index, id);
     }
 
-    size_t CoreAudioSampleBatch(const int16_t *data, const size_t frames) {
+    size_t CoreAudioSampleBatch(const int16_t *data, const size_t frames) noexcept {
         return mineretro_audio_batch(data, frames);
     }
 
-    void CoreAudioSample(const int16_t left, const int16_t right) {
+    void CoreAudioSample(const int16_t left, const int16_t right) noexcept {
         mineretro_audio(left, right);
     }
 
-    void mineretro_set_video(const retro_video_refresh_t video) {
+    void MineretroSetVideo(const retro_video_refresh_t video) {
         mineretro_video = video;
     }
 
-    void mineretro_set_audio(const retro_audio_sample_t audio) {
+    void MineretroSetAudio(const retro_audio_sample_t audio) {
         mineretro_audio = audio;
     }
 
-    void mineretro_set_audio_batch(const retro_audio_sample_batch_t audio) {
+    void MineretroSetAudioBatch(const retro_audio_sample_batch_t audio) {
         mineretro_audio_batch = audio;
     }
 
-    void mineretro_set_input_poll(const retro_input_poll_t input_poll) {
+    void MineretroSetInputPoll(const retro_input_poll_t input_poll) {
         mineretro_input_poll = input_poll;
     }
 
-    void mineretro_set_input_state(const retro_input_state_t input_state) {
+    void MineretroSetInputState(const retro_input_state_t input_state) {
         mineretro_input_state = input_state;
     }
 
-    void mineretro_set_system_and_save_dir(char *system, char *save) {
+    void MineretroSetSystemAndSaveDir(char *system, char *save) {
         system_dir = system;
         save_dir = save;
     }
 
-    retro_system_info mineretro_get_system_info() {
+    retro_system_info MineretroGetSystemInfo() {
         return system_info;
     }
 
-    retro_system_av_info mineretro_get_system_av_info() {
+    retro_system_av_info MineretroGetSystemAvInfo() {
         return av_info;
     }
 
-    retro_game_geometry mineretro_get_geometry_info() {
+    retro_game_geometry MineretroGetGeometryInfo() {
         return geometry_info;
     }
 
-    retro_pixel_format mineretro_get_pixel_format() {
+    retro_pixel_format MineretroGetPixelFormat() {
         return pixel_format;
     }
 
-    unsigned mineretro_get_rotation() {
+    unsigned MineretroGetRotation() {
         return rotation;
     }
 
-    void CoreLog(const retro_log_level level, const char *fmt, ...) {
+    void CoreLog(const retro_log_level level, const char *fmt, ...) noexcept {
         // 有些核心会 log 刷屏
-        if (level == RETRO_LOG_DEBUG) {
+        if (level < kMinLogLevel) {
             return;
         }
 
@@ -395,19 +380,19 @@ namespace mineretro {
         va_list va;
 
         va_start(va, fmt);
-        vsnprintf(msg_buffer, sizeof(msg_buffer), fmt, va);
+        auto msg_size = vsnprintf(msg_buffer, sizeof(msg_buffer), fmt, va);
         va_end(va);
+        std::string_view msg(msg_buffer, msg_size);
 
         const tm *tm_info = localtime(&now);
-        strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", tm_info);
+        auto time_size = strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", tm_info);
+        std::string_view time(time_buffer, time_size);;
 
         // 判断最后一行是不是换行符
-        if (const int len = strlen(msg_buffer); msg_buffer[len - 1] == '\n') {
-            fprintf(stderr, "[%s] [%s] [Mineretro] %s", time_buffer, kLogLevel[level], msg_buffer);
+        if (msg.ends_with('\n')) {
+            std::cerr << std::format("[{}] [{}] [Mineretro] {}", time, kLogLevel[level], msg);
         } else {
-            fprintf(stderr, "[%s] [%s] [Mineretro] %s\n", time_buffer, kLogLevel[level], msg_buffer);
+            std::cerr << std::format("[{}] [{}] [Mineretro] {}\n", time, kLogLevel[level], msg);
         }
-
-        fflush(stderr);
     }
 }
