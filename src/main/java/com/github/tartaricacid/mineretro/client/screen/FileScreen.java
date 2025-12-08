@@ -29,7 +29,7 @@ public class FileScreen extends Screen {
     public FileScreen() {
         super(Component.literal("File Screen"));
         this.mineRetro = MineretroMiddleTier.INSTANCE;
-        this.mineRetro.mineretro_set_system_and_save_dir(GameConfig.SYSTEM_DIR_PATH.toString(), GameConfig.SAVE_DIR_PATH.toString());
+        this.mineRetro.MineretroSetSystemAndSaveDir(GameConfig.SYSTEM_DIR_PATH.toString(), GameConfig.SAVE_DIR_PATH.toString());
     }
 
     @Override
@@ -73,8 +73,8 @@ public class FileScreen extends Screen {
             this.mineRetro.MineretroLoadCore(corePathStr);
             this.coreIsLoaded = true;
             // 显示核心名称和版本
-            String libName = this.mineRetro.mineretro_get_system_info().library_name;
-            String libVersion = this.mineRetro.mineretro_get_system_info().library_version;
+            String libName = this.mineRetro.MineretroGetSystemInfo().library_name;
+            String libVersion = this.mineRetro.MineretroGetSystemInfo().library_version;
             this.corePathMessage = Component.translatable("screen.mineretro.file_screen.core", libName, libVersion);
             // 清空警告和游戏路径提升
             this.gamePathMessage = Component.empty();
@@ -89,7 +89,7 @@ public class FileScreen extends Screen {
         }
 
         String gamePathStr;
-        var sysInfo = this.mineRetro.mineretro_get_system_info();
+        var sysInfo = this.mineRetro.MineretroGetSystemInfo();
         String[] extensions = sysInfo.valid_extensions.split("\\|");
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer filter = stack.mallocPointer(extensions.length);

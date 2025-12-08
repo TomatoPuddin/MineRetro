@@ -20,27 +20,27 @@ public interface MineretroMiddleTier extends Library {
 
     void MineretroLoop();
 
-    void mineretro_set_video(VideoRefresh video);
+    void MineretroSetVideo(VideoRefresh video);
 
-    void mineretro_set_audio(AudioSample audio);
+    void MineretroSetAudio(AudioSample audio);
 
-    void mineretro_set_audio_batch(AudioSampleBatch audio);
+    void MineretroSetAudioBatch(AudioSampleBatch audio);
 
-    void mineretro_set_input_poll(InputPoll inputPoll);
+    void MineretroSetInputPoll(InputPoll inputPoll);
 
-    void mineretro_set_input_state(InputState inputState);
+    void MineretroSetInputState(InputState inputState);
 
-    void mineretro_set_system_and_save_dir(String systemDir, String saveDir);
+    void MineretroSetSystemAndSaveDir(String systemDir, String saveDir);
 
-    SystemInfo.ByValue mineretro_get_system_info();
+    SystemInfo.ByValue MineretroGetSystemInfo();
 
-    SystemAvInfo.ByValue mineretro_get_system_av_info();
+    SystemAvInfo.ByValue MineretroGetSystemAvInfo();
 
-    GameGeometry.ByValue mineretro_get_geometry_info();
+    GameGeometry.ByValue MineretroGetGeometryInfo();
 
-    int mineretro_get_pixel_format();
+    int MineretroGetPixelFormat();
 
-    int mineretro_get_rotation();
+    int MineretroGetRotation();
 
     interface VideoRefresh extends Callback {
         void invoke(Pointer data, int width, int height, int pitch);

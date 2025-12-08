@@ -25,17 +25,17 @@ public class GameScreen extends Screen {
         super(Component.literal("MineRetro"));
         this.mineRetro = mineRetro;
 
-        this.videoManager = new VideoManager(this.mineRetro.mineretro_get_system_av_info().geometry, this.mineRetro.mineretro_get_rotation());
-        this.videoManager.init(this.mineRetro.mineretro_get_pixel_format());
-        this.mineRetro.mineretro_set_video(this.videoManager.getVideoRefresh());
+        this.videoManager = new VideoManager(this.mineRetro.MineretroGetSystemAvInfo().geometry, this.mineRetro.MineretroGetRotation());
+        this.videoManager.init(this.mineRetro.MineretroGetPixelFormat());
+        this.mineRetro.MineretroSetVideo(this.videoManager.getVideoRefresh());
 
         this.soundManager = new SoundManager(this.mineRetro);
-        mineRetro.mineretro_set_audio(this.soundManager.getSampleOnce());
-        mineRetro.mineretro_set_audio_batch(this.soundManager.getAudioSampleBatch());
+        mineRetro.MineretroSetAudio(this.soundManager.getSampleOnce());
+        mineRetro.MineretroSetAudioBatch(this.soundManager.getAudioSampleBatch());
 
         this.inputManager = new InputManager();
-        mineRetro.mineretro_set_input_poll(this.inputManager.getInputPoll());
-        mineRetro.mineretro_set_input_state(this.inputManager.getInputState());
+        mineRetro.MineretroSetInputPoll(this.inputManager.getInputPoll());
+        mineRetro.MineretroSetInputState(this.inputManager.getInputState());
     }
 
     @Override

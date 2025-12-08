@@ -17,7 +17,7 @@ public class SoundManager {
 
     public SoundManager(MineretroMiddleTier mineRetro) {
         try {
-            float sampleRate = (float) mineRetro.mineretro_get_system_av_info().timing.sample_rate;
+            float sampleRate = (float) mineRetro.MineretroGetSystemAvInfo().timing.sample_rate;
             AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
                     sampleRate, 16, 2, 2 * 2, sampleRate, false);
             this.sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
