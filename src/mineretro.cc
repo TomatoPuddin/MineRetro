@@ -309,31 +309,39 @@ namespace mineretro {
         if (data == nullptr) {
             return;
         }
-        mineretro_video(data, width, height, pitch);
+        if (mineretro_video != nullptr) {
+            mineretro_video(data, width, height, pitch);
+        }
     }
 
     void CoreInputPoll() {
         static_assert(std::is_same_v<retro_input_poll_t, decltype(&CoreInputPoll)>);
-
-        mineretro_input_poll();
+        if (mineretro_input_poll != nullptr) {
+            mineretro_input_poll();
+        }
     }
 
     int16_t CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id) {
         static_assert(std::is_same_v<retro_input_state_t, decltype(&CoreInputState)>);
-
-        return mineretro_input_state(port, device, index, id);
+        if (mineretro_input_state != nullptr) {
+            return mineretro_input_state(port, device, index, id);
+        }
+        return 0;
     }
 
     size_t CoreAudioSampleBatch(const int16_t *data, const size_t frames) {
         static_assert(std::is_same_v<retro_audio_sample_batch_t, decltype(&CoreAudioSampleBatch)>);
-
-        return mineretro_audio_batch(data, frames);
+        if (mineretro_audio_batch != nullptr) {
+            return mineretro_audio_batch(data, frames);
+        }
+        return 0;
     }
 
     void CoreAudioSample(const int16_t left, const int16_t right) {
         static_assert(std::is_same_v<retro_audio_sample_t, decltype(&CoreAudioSample)>);
-
-        mineretro_audio(left, right);
+        if (mineretro_audio != nullptr) {
+            mineretro_audio(left, right);
+        }
     }
 
     void MineretroSetVideo(const retro_video_refresh_t video) {
