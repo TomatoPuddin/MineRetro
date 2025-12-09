@@ -173,7 +173,9 @@ namespace mineretro {
         libretro_reference.retro_run();
     }
 
-    bool CoreEnvironment(const unsigned cmd, void* data) noexcept {
+    bool CoreEnvironment(unsigned cmd, void* data) {
+        static_assert(std::is_same_v<retro_environment_t, decltype(&CoreEnvironment)>);
+
         // 这个选项每帧会执行一次，故放在最前面
         if (cmd == RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE) {
             *(bool *) data = false;
@@ -300,26 +302,36 @@ namespace mineretro {
         }
     }
 
-    void CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch) noexcept {
+    void CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch) {
+        static_assert(std::is_same_v<retro_video_refresh_t, decltype(&CoreVideoRefresh)>);
+
         if (data == nullptr) {
             return;
         }
         mineretro_video(data, width, height, pitch);
     }
 
-    void CoreInputPoll() noexcept {
+    void CoreInputPoll() {
+        static_assert(std::is_same_v<retro_input_poll_t, decltype(&CoreInputPoll)>);
+
         mineretro_input_poll();
     }
 
-    int16_t CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id) noexcept {
+    int16_t CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id) {
+        static_assert(std::is_same_v<retro_input_state_t, decltype(&CoreInputState)>);
+
         return mineretro_input_state(port, device, index, id);
     }
 
-    size_t CoreAudioSampleBatch(const int16_t *data, const size_t frames) noexcept {
+    size_t CoreAudioSampleBatch(const int16_t *data, const size_t frames) {
+        static_assert(std::is_same_v<retro_audio_sample_batch_t, decltype(&CoreAudioSampleBatch)>);
+
         return mineretro_audio_batch(data, frames);
     }
 
-    void CoreAudioSample(const int16_t left, const int16_t right) noexcept {
+    void CoreAudioSample(const int16_t left, const int16_t right) {
+        static_assert(std::is_same_v<retro_audio_sample_t, decltype(&CoreAudioSample)>);
+
         mineretro_audio(left, right);
     }
 
@@ -368,7 +380,7 @@ namespace mineretro {
         return rotation;
     }
 
-    void CoreLog(const retro_log_level level, const char *fmt, ...) noexcept {
+    void CoreLog(const retro_log_level level, const char *fmt, ...) {
         // 有些核心会 log 刷屏
         if (level < kMinLogLevel) {
             return;

@@ -70,17 +70,17 @@ namespace mineretro {
     MR_API unsigned MineretroGetRotation();
     }
 
-    bool RETRO_CALLCONV CoreEnvironment(unsigned cmd, void *data) noexcept;
+    bool RETRO_CALLCONV CoreEnvironment(unsigned cmd, void *data);
 
-    void RETRO_CALLCONV CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch) noexcept;
+    void RETRO_CALLCONV CoreVideoRefresh(const void *data, unsigned width, unsigned height, size_t pitch);
 
-    void RETRO_CALLCONV CoreInputPoll() noexcept;
+    void RETRO_CALLCONV CoreInputPoll();
 
-    int16_t RETRO_CALLCONV CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id) noexcept;
+    int16_t RETRO_CALLCONV CoreInputState(unsigned port, unsigned device, unsigned index, unsigned id);
 
-    size_t RETRO_CALLCONV CoreAudioSampleBatch(const int16_t *data, size_t frames) noexcept;
+    size_t RETRO_CALLCONV CoreAudioSampleBatch(const int16_t *data, size_t frames);
 
-    void RETRO_CALLCONV CoreAudioSample(int16_t left, int16_t right) noexcept;
+    void RETRO_CALLCONV CoreAudioSample(int16_t left, int16_t right);
 
-    void RETRO_CALLCONV CoreLog(retro_log_level level, const char *fmt, ...) noexcept;
+    void RETRO_CALLCONV CoreLog(retro_log_level level, const char *fmt, ...);
 }
