@@ -83,15 +83,16 @@ namespace mineretro {
         libretro_reference.lib = std::move(*res);
         CoreLog(RETRO_LOG_INFO, "API Version: %d", libretro_reference.retro_api_version());
 
-        set_environment(reinterpret_cast<retro_environment_t>(CoreEnvironment));
+        set_environment(CoreEnvironment);
+        libretro_reference.retro_init();
+        libretro_reference.initialized = true;
+
         set_video_refresh(CoreVideoRefresh);
         set_input_poll(CoreInputPoll);
         set_input_state(CoreInputState);
         set_audio_sample(CoreAudioSample);
         set_audio_sample_batch(CoreAudioSampleBatch);
 
-        libretro_reference.retro_init();
-        libretro_reference.initialized = true;
         // 获取系统信息
         libretro_reference.retro_get_system_info(&system_info);
         CoreLog(RETRO_LOG_INFO, "Core loaded: %s", core_file);
