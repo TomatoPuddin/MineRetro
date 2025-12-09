@@ -42,6 +42,7 @@ public class SoundManager {
             float masterVolume = Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.MASTER);
             adjustVolume(byteArray, masterVolume);
             sourceDataLine.write(byteArray, 0, frames * 4);
+            return frames;
         };
     }
 

@@ -51,7 +51,7 @@ public interface MineretroMiddleTier extends Library {
     }
 
     interface AudioSampleBatch extends Callback {
-        void invoke(Pointer data, int frames);
+        long invoke(Pointer data, int frames);
     }
 
     interface InputPoll extends Callback {
@@ -59,7 +59,7 @@ public interface MineretroMiddleTier extends Library {
     }
 
     interface InputState extends Callback {
-        int invoke(int port, int device, int index, int id);
+        short invoke(int port, int device, int index, int id);
     }
 
     @Structure.FieldOrder({"base_width", "base_height", "max_width", "max_height", "aspect_ratio"})

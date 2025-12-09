@@ -22,7 +22,7 @@ public class InputManager {
             new Keymap(GLFW.GLFW_KEY_Q, RETRO_DEVICE_ID_JOYPAD_L),
             new Keymap(GLFW.GLFW_KEY_W, RETRO_DEVICE_ID_JOYPAD_R)
     };
-    private static final int[] KEY_STATES = new int[KEY_MAPS.length];
+    private static final short[] KEY_STATES = new short[KEY_MAPS.length];
 
     private final MineretroMiddleTier.InputPoll inputPoll;
     private final MineretroMiddleTier.InputState inputState;
@@ -33,13 +33,13 @@ public class InputManager {
                 int glfwKeyId = KEY_MAPS[i].glfwKeyId;
                 int retroKeyId = KEY_MAPS[i].retroKeyId;
                 boolean keyDown = InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), glfwKeyId);
-                KEY_STATES[retroKeyId] = keyDown ? 1 : 0;
+                KEY_STATES[retroKeyId] = keyDown ? (short) 1 : (short) 0;
             }
         };
 
         this.inputState = (port, device, index, id) -> {
             if (port > 0 || index > 0 || device != RETRO_DEVICE_JOYPAD || id >= KEY_STATES.length) {
-                return 0;
+                return (short) 0;
             }
             return KEY_STATES[id];
         };
