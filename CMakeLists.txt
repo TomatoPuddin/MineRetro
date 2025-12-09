@@ -47,4 +47,5 @@ else()
     endif()
 endif()
 
-add_library(Mineretro SHARED src/mineretro.cc src/platforms/impl.cc)
+file(GLOB_RECURSE sources "${PROJECT_SOURCE_DIR}/*.cc")
+add_library(Mineretro SHARED ${sources})

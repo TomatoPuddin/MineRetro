@@ -56,22 +56,22 @@ namespace mineretro {
         decltype(&retro_set_audio_sample_batch) set_audio_sample_batch;
 
         auto result = [&]() -> Result<void> {
-            MR_CHECK(lib.FindSymbol("retro_init", libretro_reference.retro_init), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_deinit", libretro_reference.retro_deinit), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_api_version", libretro_reference.retro_api_version), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_get_system_info", libretro_reference.retro_get_system_info), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_get_system_av_info", libretro_reference.retro_get_system_av_info), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_set_controller_port_device", libretro_reference.retro_set_controller_port_device), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_run", libretro_reference.retro_run), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_load_game", libretro_reference.retro_load_game), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_unload_game", libretro_reference.retro_unload_game), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_init", libretro_reference.retro_init), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_deinit", libretro_reference.retro_deinit), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_api_version", libretro_reference.retro_api_version), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_get_system_info", libretro_reference.retro_get_system_info), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_get_system_av_info", libretro_reference.retro_get_system_av_info), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_set_controller_port_device", libretro_reference.retro_set_controller_port_device), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_run", libretro_reference.retro_run), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_load_game", libretro_reference.retro_load_game), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_unload_game", libretro_reference.retro_unload_game), LoadRetroCore);
 
-            MR_CHECK(lib.FindSymbol("retro_set_environment", set_environment), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_set_video_refresh", set_video_refresh), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_set_input_poll", set_input_poll), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_set_input_state", set_input_state), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_set_audio_sample", set_audio_sample), LoadRetroCoreLib);
-            MR_CHECK(lib.FindSymbol("retro_set_audio_sample_batch", set_audio_sample_batch), LoadRetroCoreLib);
+            MR_CHECK(lib.FindSymbol("retro_set_environment", set_environment), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_set_video_refresh", set_video_refresh), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_set_input_poll", set_input_poll), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_set_input_state", set_input_state), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_set_audio_sample", set_audio_sample), LoadRetroCore);
+            MR_CHECK(lib.FindSymbol("retro_set_audio_sample_batch", set_audio_sample_batch), LoadRetroCore);
 
             return kSuccess;
         }();

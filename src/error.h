@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <format>
 #include <string>
-#include <list>
+#include <forward_list>
 #include <sstream>
 #include <source_location>
 
@@ -26,14 +26,14 @@ namespace mineretro {
         struct Empty {};
     }
 
-    enum class ErrorCode : uint32_t {
+    enum class ErrorCode : uint16_t {
         Undefined = 0,
 
         ReadFile,
         WriteFile,
         FindSymbol,
         LoadLib,
-        LoadRetroCoreLib,
+        LoadRetroCore,
 
         LastValue
     };
@@ -44,7 +44,7 @@ namespace mineretro {
         std::source_location loc;
         std::string msg;
 
-        [[nodiscard]] std::string describe() const {
+        [[nodiscard]] std::string Describe() const {
             if (!msg.empty()) {
                 return std::format("Err{} \"{}\" at [{}] ({}:{})",
                     type, msg, loc.function_name(), loc.file_name(), loc.line());
@@ -60,12 +60,10 @@ namespace mineretro {
         static constexpr bool IsVoid = std::is_void_v<T>;
         static constexpr bool IsReference = std::is_lvalue_reference_v<T>;
         using ValueType = std::conditional_t<IsVoid, detail::Empty, std::remove_reference_t<T>>;
-        using ErrorStack = std::list<Error>;
+        using ErrorStack = std::forward_list<Error>;
 
         template <typename = void> requires IsReference
         constexpr Result(ValueType& value) : data(std::ref(value)) {}
-        template <typename Ref> requires (!IsVoid && !IsReference && std::is_same_v<std::remove_reference_t<Ref>, ValueType>)
-        constexpr Result(Ref&& value) : data(std::move(value)) {}   // 左值也要移动
         template <typename...Args> requires (!IsReference && ((!std::is_same_v<std::decay_t<Args>, ErrorCode>)&&...))
         constexpr Result(Args&&...args) : data(std::in_place_type_t<ValueType>(), std::forward<Args>(args)...) {}
 
@@ -79,15 +77,17 @@ namespace mineretro {
             GetErrStack().emplace_front(code, type, std::move(loc), std::move(msg));
         }
 
-        [[nodiscard]] bool IsOk() const noexcept { return std::holds_alternative<ValueType>(data); }
-        [[nodiscard]] bool IsErr() const noexcept { return std::holds_alternative<ErrorStack>(data); }
+        [[nodiscard]] constexpr bool IsOk() const noexcept { return std::holds_alternative<ValueType>(data); }
+        [[nodiscard]] constexpr bool IsErr() const noexcept { return std::holds_alternative<ErrorStack>(data); }
 
-        operator bool() const noexcept { return IsOk(); }
-        ValueType& operator*() { return GetValue(); }
+        constexpr operator bool() const noexcept { return IsOk(); }
+        constexpr ValueType& operator*() { return GetValue(); }
+        constexpr ValueType* operator->() { return std::addressof(GetValue()); }
 
-        [[nodiscard]] ValueType& GetValue() {
+        [[nodiscard]] constexpr ValueType& GetValue() {
+            static_assert(!IsVoid);
             if constexpr (IsReference) {
-                return std::get<ValueType>(data).get();
+                return std::get<std::reference_wrapper<ValueType>>(data).get();
             } else {
                 return std::get<ValueType>(data);
             }
@@ -96,14 +96,14 @@ namespace mineretro {
         [[nodiscard]] const ErrorStack& GetErrStack() const { return std::get<ErrorStack>(data); }
         ErrorStack& GetErrStack() { return std::get<ErrorStack>(data); }
 
-         [[nodiscard]] std::string describe() const {
+         [[nodiscard]] std::string DescribeErr() const {
             std::ostringstream stream;
 
             auto &stack = GetErrStack();
             auto iter = stack.begin();
-            stream << iter->describe();
+            stream << iter->Describe();
             while (++iter != stack.end()) {
-                stream << "\n    " << iter->describe();
+                stream << "\n    " << iter->Describe();
             }
 
             return stream.str();
